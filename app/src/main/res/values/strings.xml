@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Spokestack Control Room</string>
+    <string name="spokestack_control_room">Spokestack Control Room</string>
+    <string name="say_spokestack">Say \"Spokestack\"</string>
+    <string name="inactive">Inactive</string>
+    <string name="vad">Voice</string>
+    <string name="asr">ASR</string>
+    <string name="activate_asr">Activate ASR</string>
+    <string name="speech_transcript">Speech transcript:</string>
+    <string name="update_from_transcript">Update from transcript</string>
+    <string name="tts_input">TTS input</string>
+    <string name="speak">Speak</string>
+    <string name="processing">Processing...</string>
+    <string name="active">Active</string>
+</resources>

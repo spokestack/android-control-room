@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/promptLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="5dp"
+        android:layout_marginBottom="29dp"
+        android:text="@string/say_spokestack"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/vadActive"
+        app:layout_constraintEnd_toEndOf="@+id/vadActive"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/transcriptLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="9dp"
+        android:text="@string/speech_transcript"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/transcriptField"
+        app:layout_constraintEnd_toEndOf="@+id/transcriptField"
+        app:layout_constraintStart_toStartOf="@+id/transcriptField"
+        app:layout_constraintTop_toBottomOf="@+id/activateAsr" />
+
+    <TextView
+        android:id="@+id/transcriptField"
+        android:layout_width="341dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="26dp"
+        android:scrollbars="vertical"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/ttsLabel"
+        app:layout_constraintEnd_toEndOf="@+id/ttsLabel"
+        app:layout_constraintStart_toStartOf="@+id/ttsLabel"
+        app:layout_constraintTop_toBottomOf="@+id/transcriptLabel" />
+
+    <TextView
+        android:id="@+id/vadActive"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="110dp"
+        android:layout_marginBottom="5dp"
+        android:text="@string/inactive"
+        android:textAlignment="textStart"
+        android:textColor="@color/red"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/asrActive"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/vadLabel"
+        app:layout_constraintTop_toBottomOf="@+id/promptLabel" />
+
+    <TextView
+        android:id="@+id/asrLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="165dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="12dp"
+        android:text="@string/asr"
+        android:textAlignment="textEnd"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/asrActive"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/vadLabel" />
+
+    <Button
+        android:id="@+id/activateAsr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="36dp"
+        android:layout_marginBottom="34dp"
+        android:onClick="activateAsrTapped"
+        android:text="@string/activate_asr"
+        app:layout_constraintBottom_toTopOf="@+id/transcriptLabel"
+        app:layout_constraintEnd_toEndOf="@+id/asrActive"
+        app:layout_constraintTop_toBottomOf="@+id/asrActive" />
+
+    <TextView
+        android:id="@+id/vadLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="154dp"
+        android:layout_marginEnd="12dp"
+        android:text="@string/vad"
+        android:textAlignment="textEnd"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/vadActive"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/vadActive" />
+
+    <TextView
+        android:id="@+id/asrActive"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="111dp"
+        android:layout_marginBottom="16dp"
+        android:text="@string/inactive"
+        android:textAlignment="textStart"
+        android:textColor="@color/red"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/activateAsr"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/asrLabel"
+        app:layout_constraintTop_toBottomOf="@+id/vadActive" />
+
+    <EditText
+        android:id="@+id/ttsInput"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="34dp"
+        android:layout_marginEnd="34dp"
+        android:layout_marginBottom="4dp"
+        android:background="@android:drawable/edit_text"
+        android:ems="10"
+        android:gravity="start|top"
+        android:importantForAutofill="no"
+        android:inputType="textMultiLine"
+        app:layout_constraintBottom_toTopOf="@+id/speakButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/echoTranscript" />
+
+    <Switch
+        android:id="@+id/echoTranscript"
+        android:layout_width="257dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="13dp"
+        android:text="@string/update_from_transcript"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/ttsInput"
+        app:layout_constraintEnd_toEndOf="@+id/ttsInput"
+        app:layout_constraintHorizontal_bias="0.493"
+        app:layout_constraintStart_toStartOf="@+id/ttsInput"
+        app:layout_constraintTop_toBottomOf="@+id/ttsLabel" />
+
+    <TextView
+        android:id="@+id/ttsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="9dp"
+        android:labelFor="@id/ttsInput"
+        android:text="@string/tts_input"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/echoTranscript"
+        app:layout_constraintEnd_toEndOf="@+id/echoTranscript"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintStart_toStartOf="@+id/echoTranscript"
+        app:layout_constraintTop_toBottomOf="@+id/transcriptField" />
+
+    <Button
+        android:id="@+id/speakButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:onClick="speakTapped"
+        android:text="@string/speak"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ttsInput" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
