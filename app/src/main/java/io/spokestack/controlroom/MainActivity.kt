@@ -14,11 +14,19 @@ import androidx.core.content.ContextCompat
 import io.spokestack.spokestack.OnSpeechEventListener
 import io.spokestack.spokestack.SpeechContext
 import io.spokestack.spokestack.SpeechPipeline
+import io.spokestack.spokestack.nlu.NLUResult
+import io.spokestack.spokestack.nlu.TraceListener
+import io.spokestack.spokestack.nlu.tensorflow.TensorflowNLU
 import io.spokestack.spokestack.tts.SynthesisRequest
 import io.spokestack.spokestack.tts.TTSEvent
 import io.spokestack.spokestack.tts.TTSListener
 import io.spokestack.spokestack.tts.TTSManager
+import io.spokestack.spokestack.util.EventTracer
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -26,7 +34,7 @@ private const val PREF_NAME = "AppPrefs"
 private const val versionKey = "versionCode"
 private const val nonexistent = -1
 
-class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
+class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener, TraceListener {
     private val logTag = javaClass.simpleName
     private val audioPermission = 1337
     private val redColor: Int by lazy(LazyThreadSafetyMode.NONE) {
@@ -37,6 +45,7 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
     }
 
     private var pipeline: SpeechPipeline? = null
+    private var nlu: TensorflowNLU? = null
     private var tts: TTSManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,9 +55,11 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
         echoTranscript.setOnCheckedChangeListener(::echoChanged)
 
         // Spokestack setup
+
         if (this.pipeline == null && checkMicPermission()) {
             buildPipeline()
         }
+        buildNLU()
         buildTTS()
     }
 
@@ -105,7 +116,7 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
             .setProperty("wake-filter-path", "$cacheDir/filter.lite")
             .setAndroidContext(applicationContext)
             .addOnSpeechEventListener(this)
-            .setProperty("trace-level", SpeechContext.TraceLevel.INFO.value())
+            .setProperty("trace-level", EventTracer.Level.DEBUG.value())
             .build()
 
         pipeline?.start()
@@ -135,7 +146,11 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
     }
 
     private fun decompressModels() {
-        listOf("detect.lite", "encode.lite", "filter.lite").forEach(::cacheAsset)
+        listOf(
+            "detect.lite", "encode.lite", "filter.lite", "nlu.lite", "nlu.json",
+            "vocab.txt"
+        )
+            .forEach(::cacheAsset)
     }
 
     private fun cacheAsset(modelName: String) {
@@ -148,6 +163,18 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
         val fos = FileOutputStream(filterFile)
         fos.write(buffer)
         fos.close()
+    }
+
+    private fun buildNLU() {
+        if (this.nlu == null) {
+            this.nlu = TensorflowNLU.Builder()
+                .setProperty("nlu-model-path", "$cacheDir/nlu.lite")
+                .setProperty("nlu-metadata-path", "$cacheDir/nlu.json")
+                .setProperty("wordpiece-vocab-path", "$cacheDir/vocab.txt")
+                .setProperty("trace-level", EventTracer.Level.DEBUG.value())
+                .addTraceListener(this)
+                .build()
+        }
     }
 
     private fun buildTTS() {
@@ -174,9 +201,56 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
 
     @Suppress("UNUSED_PARAMETER")
     fun speakTapped(view: View) {
-        val request = SynthesisRequest.Builder(ttsInput.text).build()
+        val request = SynthesisRequest.Builder(ttsInput.text)
+            .withMode(SynthesisRequest.Mode.MARKDOWN)
+            .build()
         tts?.synthesize(request)
         setTTSProcessing(true)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun classifyTapped(view: View) {
+        classify(ttsInput.text.toString())
+    }
+
+    private fun classify(utterance: String) {
+        GlobalScope.launch(Dispatchers.Default) {
+            nlu?.let {
+                val result = it.classify(utterance).get()
+                withContext(Dispatchers.Main) {
+                    setNluResults(result)
+                }
+            }
+        }
+    }
+
+// async-er method
+//    private fun classify(utterance: String) {
+//        val result = nlu?.classify(utterance)
+//        result?.registerCallback(object : Callback<NLUResult> {
+//            override fun call(nluResult: NLUResult?) {
+//                runOnUiThread {
+//                    setNluResults(nluResult!!)
+//                }
+//            }
+//
+//            override fun onError(err: Throwable?) {
+//                errorToast(err?.localizedMessage!!)
+//            }
+//        })
+//    }
+
+    private fun setNluResults(result: NLUResult) {
+        result.error?.printStackTrace()
+        intentResult.text = result.intent
+        val slotDisplay = StringBuilder()
+        result.slots?.forEach { (name, slot) ->
+            slotDisplay.append(name)
+            slotDisplay.append(": ")
+            slotDisplay.append(slot.value.toString())
+            slotDisplay.append("\n")
+        }
+        slotField.setText(slotDisplay.toString())
     }
 
     private fun setVadActive(active: Boolean) {
@@ -219,7 +293,9 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
             "true" -> setVadActive(true)
             "false" -> setVadActive(false)
             // not a VAD trace; do nothing
-            else -> return
+            else -> if (!message.startsWith("agc", false)) {
+                    println(message)
+                }
         }
     }
 
@@ -230,7 +306,10 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
             SpeechContext.Event.DEACTIVATE -> setAsrActive(false)
             SpeechContext.Event.RECOGNIZE -> context?.transcript?.let { transcribe(it) }
             SpeechContext.Event.TIMEOUT -> errorToast("ASR timeout")
-            SpeechContext.Event.ERROR -> context?.error?.message?.let { errorToast(it) }
+            SpeechContext.Event.ERROR -> context?.error?.message?.let {
+                context.error.printStackTrace()
+                errorToast("${context.error.javaClass}: $it")
+            }
             SpeechContext.Event.TRACE -> context?.message?.let { handleTrace(it) }
         }
     }
@@ -239,13 +318,18 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
     override fun eventReceived(event: TTSEvent?) {
         when (event?.type) {
             TTSEvent.Type.ERROR -> event.error.message?.let { errorToast("TTS error: $it") }
-            TTSEvent.Type.AUDIO_AVAILABLE -> setTTSProcessing(false)
+            TTSEvent.Type.AUDIO_AVAILABLE -> {
+                println(event.ttsResponse.audioUri)
+                setTTSProcessing(false)
+            }
         }
     }
 
     private fun errorToast(message: String) {
-        val toast = Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT)
-        toast.show()
+        runOnUiThread {
+            val toast = Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT)
+            toast.show()
+        }
     }
 
     private fun setTTSProcessing(processing: Boolean) {
@@ -258,5 +342,9 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
                 speakButton.text = getString(R.string.speak)
             }
         }
+    }
+
+    override fun onTrace(level: EventTracer.Level?, message: String?) {
+        println("$level: $message")
     }
 }
