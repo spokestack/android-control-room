@@ -1,9 +1,16 @@
 package io.spokestack.controlroom
 
 import android.Manifest
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.CompoundButton
@@ -14,19 +21,22 @@ import androidx.core.content.ContextCompat
 import io.spokestack.spokestack.OnSpeechEventListener
 import io.spokestack.spokestack.SpeechContext
 import io.spokestack.spokestack.SpeechPipeline
+import io.spokestack.spokestack.nlu.TraceListener
 import io.spokestack.spokestack.tts.SynthesisRequest
 import io.spokestack.spokestack.tts.TTSEvent
 import io.spokestack.spokestack.tts.TTSListener
 import io.spokestack.spokestack.tts.TTSManager
+import io.spokestack.spokestack.util.EventTracer
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
 private const val PREF_NAME = "AppPrefs"
 private const val versionKey = "versionCode"
 private const val nonexistent = -1
 
-class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
+class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener, TraceListener {
     private val logTag = javaClass.simpleName
     private val audioPermission = 1337
     private val redColor: Int by lazy(LazyThreadSafetyMode.NONE) {
@@ -39,6 +49,11 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
     private var pipeline: SpeechPipeline? = null
     private var tts: TTSManager? = null
 
+    private val scorerPath: String by lazy { "$externalCacheDir/deepspeech.scorer" }
+    private lateinit var downloadManager: DownloadManager
+    private var scorerDownloadId: Long = 0
+    private var downloadStart: Long = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -46,6 +61,16 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
         echoTranscript.setOnCheckedChangeListener(::echoChanged)
 
         // Spokestack setup
+//        if (!checkForScorer()) {
+//            downloadScorer()
+//        } else {
+//            Toast.makeText(applicationContext, "Scorer model found", Toast.LENGTH_LONG).show()
+//            if (this.pipeline == null && checkMicPermission()) {
+//                buildPipeline()
+//            }
+//            buildTTS()
+//        }
+
         if (this.pipeline == null && checkMicPermission()) {
             buildPipeline()
         }
@@ -99,13 +124,14 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
         checkForModels()
 
         pipeline = SpeechPipeline.Builder()
-            .useProfile("io.spokestack.spokestack.profile.TFWakewordAndroidASR")
+            .useProfile("io.spokestack.spokestack.profile.TFWakewordMozillaASR")
             .setProperty("wake-detect-path", "$cacheDir/detect.lite")
             .setProperty("wake-encode-path", "$cacheDir/encode.lite")
             .setProperty("wake-filter-path", "$cacheDir/filter.lite")
-            .setAndroidContext(applicationContext)
+            .setProperty("mozilla-model-path", "$cacheDir/deepspeech.tflite")
+//            .setProperty("mozilla-scorer-path", scorerPath)
             .addOnSpeechEventListener(this)
-            .setProperty("trace-level", SpeechContext.TraceLevel.INFO.value())
+            .setProperty("trace-level", EventTracer.Level.DEBUG.value())
             .build()
 
         pipeline?.start()
@@ -135,19 +161,27 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
     }
 
     private fun decompressModels() {
-        listOf("detect.lite", "encode.lite", "filter.lite").forEach(::cacheAsset)
+        listOf(
+            "detect.lite", "encode.lite", "filter.lite", "deepspeech.tflite", "vocab.txt"
+        )
+            .forEach(::cacheAsset)
     }
 
-    private fun cacheAsset(modelName: String) {
-        val filterFile = File("$cacheDir/$modelName")
-        val inputStream = assets.open(modelName)
-        val size = inputStream.available()
-        val buffer = ByteArray(size)
-        inputStream.read(buffer)
-        inputStream.close()
-        val fos = FileOutputStream(filterFile)
-        fos.write(buffer)
-        fos.close()
+    private fun cacheAsset(assetName: String) {
+        val assetFile = File("$cacheDir/$assetName")
+        try {
+            val inputStream = assets.open(assetName)
+            val size = inputStream.available()
+            val buffer = ByteArray(size)
+            inputStream.read(buffer)
+            inputStream.close()
+            val fos = FileOutputStream(assetFile)
+            fos.write(buffer)
+            fos.close()
+        } catch (ioe: IOException) {
+            ioe.printStackTrace()
+            return
+        }
     }
 
     private fun buildTTS() {
@@ -258,5 +292,71 @@ class MainActivity : AppCompatActivity(), OnSpeechEventListener, TTSListener {
                 speakButton.text = getString(R.string.speak)
             }
         }
+    }
+
+    // ==================
+    // Deepspeech scorer downloading
+    // ==================
+
+    private fun checkForScorer(): Boolean {
+        return File(scorerPath).exists()
+    }
+
+    private fun downloadScorer() {
+        val scorerUrl =
+            Uri.parse("https://github.com/mozilla/DeepSpeech/releases/download/v0.7.0/deepspeech-0.7.0-models.scorer")
+        val scorerDestFile = Uri.parse("file://$scorerPath")
+        this.activateAsr.isEnabled = false
+        val noModel = Toast.makeText(
+            applicationContext,
+            "No scorer found. Triggering download ...",
+            Toast.LENGTH_LONG
+        )
+        noModel.show()
+        this.downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val request = DownloadManager.Request(scorerUrl)
+        request.setTitle("DeepSpeech scorer")
+        request.setDescription("DeepSpeech scorer")
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        request.setDestinationUri(scorerDestFile)
+        this.scorerDownloadId = this.downloadManager.enqueue(request)
+        this.downloadStart = SystemClock.elapsedRealtime()
+        applicationContext.registerReceiver(
+            ScorerReceiver(),
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        )
+    }
+
+    inner class ScorerReceiver : BroadcastReceiver() {
+        override fun onReceive(
+            context: Context,
+            intent: Intent
+        ) {
+            val action = intent.action
+            if (DownloadManager.ACTION_DOWNLOAD_COMPLETE == action) {
+                val downloadId =
+                    intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0)
+                val query = DownloadManager.Query()
+                query.setFilterById(downloadId)
+                val c: Cursor = this@MainActivity.downloadManager.query(query)
+                if (c.moveToFirst()) {
+                    val columnIndex =
+                        c.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    if (DownloadManager.STATUS_SUCCESSFUL == c.getInt(columnIndex)) {
+                        val downloadSecs = (SystemClock.elapsedRealtime() -
+                                this@MainActivity.downloadStart) / 1000
+                        Toast.makeText(
+                            applicationContext,
+                            "Download took $downloadSecs seconds",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        buildPipeline()
+                        buildTTS()
+                        this@MainActivity.activateAsr.isEnabled = true
+                    }
+                }
+            }
+        }
+
     }
 }

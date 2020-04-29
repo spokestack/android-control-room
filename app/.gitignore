@@ -2,3 +2,6 @@
 
 # wakeword models
 *.lite
+
+# other models
+*.tflite
