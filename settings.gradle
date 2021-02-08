@@ -1,2 +1,2 @@
-rootProject.name='Spokestack Skeleton'
+rootProject.name='Spokestack Control Room'
 include ':app'
