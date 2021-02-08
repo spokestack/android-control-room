@@ -144,7 +144,7 @@
         android:layout_height="18dp"
         android:layout_marginTop="308dp"
         android:text="@string/update_from_transcript"
-        android:textSize="18sp"
+        android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
