@@ -50,7 +50,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     // base Spokestack dependency
-    implementation 'io.spokestack:spokestack-android:11.1.0'
+    implementation "io.spokestack:spokestack-android:$spokestack_version"
 
     implementation 'androidx.lifecycle:lifecycle-common-java8:2.3.0'
     implementation 'androidx.media:media:1.2.1'
