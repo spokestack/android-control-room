@@ -1,4 +1,2 @@
-/build
-
 # wakeword models
-*.lite
+*.tflite
