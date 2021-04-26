@@ -211,15 +211,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun setNluResults(result: NLUResult) {
         result.error?.printStackTrace()
-        intentResult.text = result.intent
-        val slotDisplay = StringBuilder()
-        result.slots?.forEach { (name, slot) ->
-            slotDisplay.append(name)
-            slotDisplay.append(": ")
-            slotDisplay.append(slot.value.toString())
-            slotDisplay.append("\n")
+        runOnUiThread {
+            intentResult.text = result.intent
+            val slotDisplay = StringBuilder()
+            result.slots?.forEach { (name, slot) ->
+                slotDisplay.append(name)
+                slotDisplay.append(": ")
+                slotDisplay.append(slot.value.toString())
+                slotDisplay.append("\n")
+            }
+            slotField.setText(slotDisplay.toString())
         }
-        slotField.setText(slotDisplay.toString())
     }
 
     private fun setVadActive(active: Boolean) {
@@ -307,15 +309,8 @@ class MainActivity : AppCompatActivity() {
         // NLU
         override fun call(result: NLUResult) {
             setNluResults(result)
-            respond(result.utterance)
-        }
-
-        private fun respond(utterance: String) {
-            // A (too-) simple response generator that parrots back what the user just said. With
-            // the default TTS setup, this response will be automatically played when the audio is
-            // available.
-            val request = SynthesisRequest.Builder("Why do you feel that $utterance?").build()
-            spokestack.synthesize(request)
+            // In an app without an explicit dialogue manager, this is where you would generate
+            // responses and call spokestack.synthesize()
         }
 
         // TTS listener implementation
