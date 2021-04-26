@@ -109,9 +109,8 @@ class MainActivity : AppCompatActivity() {
             .setProperty("wake-filter-path", "$cacheDir/filter.tflite")
             // NLU
             // You'll need NLU models to use this component; see the README for more
-            // information on obtaining them
-            .setProperty("nlu-model-path", "$cacheDir/note.tflite")
-            .setProperty("nlu-metadata-path", "$cacheDir/note.json")
+            .setProperty("nlu-model-path", "$cacheDir/nlu.tflite")
+            .setProperty("nlu-metadata-path", "$cacheDir/nlu.json")
             .setProperty("wordpiece-vocab-path", "$cacheDir/vocab.txt")
             .setProperty("trace-level", EventTracer.Level.DEBUG.value())
             // TTS
@@ -155,8 +154,8 @@ class MainActivity : AppCompatActivity() {
             "detect.tflite",
             "encode.tflite",
             "filter.tflite",
-            "note.tflite",
-            "note.json",
+            "nlu.tflite",
+            "nlu.json",
             "vocab.txt"
         ).forEach(::cacheAsset)
     }

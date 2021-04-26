@@ -33,6 +33,8 @@ If the word "spokestack" is detected by the on-device wakeword model (or if the 
 
 The bottom part of the screen is for testing Spokestack's NLU and TTS services. If you'd like Spokestack to use the ASR transcript, toggle the `Update from transcript` switch; otherwise you can enter the text to be classified or spoken into the text field just above the `Speak` button.
 
+The NLU model included with the repository contains intents from a [Minecraft sample app](https://github.com/spokestack/minecraft-skill-android), originally ported from [an Alexa sample skill](https://github.com/alexa/skill-sample-nodejs-howto). To see the list of intents it's capable of recognizing, look in `src/main/assets/nlu.json`. The main intent is `RecipeIntent`, which responds to utterances similar to "How do I make a ____", where the blank contains an item in the Minecraft game but can theoretically be any noun.
+
 That's it! Happy testing!
 
 ---
