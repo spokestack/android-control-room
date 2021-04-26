@@ -9,9 +9,9 @@ This is a simple Android app that demonstrates the core features of [Spokestack 
 ### Wakeword detection
 
 Just like the skeleton project mentioned above, this demo is configured to use wakeword detection provided by [TensorFlow Lite](https://www.tensorflow.org/lite) models. These models are trained to respond to the "Spokestack" wakeword. They must be downloaded and placed in `src/main/assets`. The file names should not be changed.
-- [detect](https://d3dmqd7cy685il.cloudfront.net/model/wake/spokestack/detect.tflite)
-- [encode](https://d3dmqd7cy685il.cloudfront.net/model/wake/spokestack/encode.tflite)
-- [filter](https://d3dmqd7cy685il.cloudfront.net/model/wake/spokestack/filter.tflite)
+- [detect](https://s.spokestack.io/u/hgmYb/detect.tflite)
+- [encode](https://s.spokestack.io/u/hgmYb/encode.tflite)
+- [filter](https://s.spokestack.io/u/hgmYb/filter.tflite)
 
 ### Speech recognition
 
