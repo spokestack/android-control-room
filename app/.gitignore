@@ -1,2 +1,4 @@
 # wakeword models
-*.tflite
+detect.tflite
+encode.tflite
+filter.tflite

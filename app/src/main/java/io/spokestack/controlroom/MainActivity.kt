@@ -100,11 +100,15 @@ class MainActivity : AppCompatActivity() {
         // it is unavailable, or use the Android-provided ASR only for demos.
         return Spokestack.Builder()
             // wakeword models
+            // These must be downloaded separately (see the README).
+            // To disable wakeword detection, delete the lines pointing to
+            // wakeword paths and uncomment the following:
+            // .withoutWakeword()
             .setProperty("wake-detect-path", "$cacheDir/detect.tflite")
             .setProperty("wake-encode-path", "$cacheDir/encode.tflite")
             .setProperty("wake-filter-path", "$cacheDir/filter.tflite")
             // NLU
-            // you'll need NLU models to use this component; see the README for more
+            // You'll need NLU models to use this component; see the README for more
             // information on obtaining them
             .setProperty("nlu-model-path", "$cacheDir/note.tflite")
             .setProperty("nlu-metadata-path", "$cacheDir/note.json")
