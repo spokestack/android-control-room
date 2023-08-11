@@ -26,14 +26,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
     packagingOptions {
-        merge '/LICENSE'
-        merge '/LICENSE.txt'
-        merge '/license.txt'
-        exclude 'META-INF/DEPENDENCIES'
-        exclude 'META-INF/INDEX.LIST'
+        resources {
+            merges += ['/LICENSE', '/LICENSE.txt', '/license.txt']
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/INDEX.LIST']
+        }
     }
+
+    namespace 'io.spokestack.controlroom'
 }
 
 dependencies {
