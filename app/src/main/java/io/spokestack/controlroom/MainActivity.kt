@@ -217,7 +217,7 @@ class MainActivity : AppCompatActivity() {
             result.slots?.forEach { (name, slot) ->
                 slotDisplay.append(name)
                 slotDisplay.append(": ")
-                slotDisplay.append(slot.value.toString())
+                slotDisplay.append(slot.value)
                 slotDisplay.append("\n")
             }
             slotField.setText(slotDisplay.toString())
